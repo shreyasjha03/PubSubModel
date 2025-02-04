@@ -1,0 +1,21 @@
+services:
+  subscriber:
+    build: .
+    container_name: subscriber-service
+    environment:
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_USER: user
+      RABBITMQ_PASS: password
+      PYTHONUNBUFFERED: 1
+    networks:
+      - rabbitmq_net
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  rabbitmq_net:
+    external: true
