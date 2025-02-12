@@ -1,0 +1,75 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:13
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: messagedb
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - rabbitmq_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d messagedb"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"  # AMQP port
+      - "15672:15672"  # Management UI
+    environment:
+      RABBITMQ_DEFAULT_USER: user
+      RABBITMQ_DEFAULT_PASS: password
+    networks:
+      - rabbitmq_net
+    healthcheck:
+      test: ["CMD", "rabbitmqctl", "status"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+
+  publisher-service:
+    build: ./publisher-service
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      - DATABASE_URL=postgresql://user:password@postgres:5432/messagedb
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_USER=user
+      - RABBITMQ_PASS=password
+    networks:
+      - rabbitmq_net
+    restart: unless-stopped
+
+  subscriber-service:
+    build: ./subscriber-service
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
+    networks:
+      - rabbitmq_net
+    restart: unless-stopped
+    user: celery
+
+volumes:
+  postgres_data:
+  rabbitmq_data:
+
+networks:
+  rabbitmq_net:
+    driver: bridge 

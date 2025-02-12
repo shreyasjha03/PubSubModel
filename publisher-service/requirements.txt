@@ -2,3 +2,7 @@ fastapi
 uvicorn
 pika
 pydantic[email]
+python-dotenv
+psycopg2-binary
+sqlalchemy
+alembic  # for database migrations

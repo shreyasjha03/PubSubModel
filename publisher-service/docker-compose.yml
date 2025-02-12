@@ -1,16 +1,45 @@
 services:
+  postgres:
+    image: postgres:13
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: messagedb
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - rabbitmq_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d messagedb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    environment:
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_USER=user
+      - RABBITMQ_PASS=password
+      - TWILIO_ACCOUNT_SID=key
+      - TWILIO_AUTH_TOKEN=key
+      - TWILIO_PHONE_NUMBER=key
+
   publisher:
     build: .
     container_name: publisher-service-publisher
     ports:
       - "8000:8000"
     environment:
+      DATABASE_URL: postgresql://user:password@postgres:5432/messagedb
       RABBITMQ_HOST: rabbitmq
       RABBITMQ_USER: user
       RABBITMQ_PASS: password
       PYTHONUNBUFFERED: 1
     networks:
       - rabbitmq_net
+    depends_on:
+      postgres:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/"]
       interval: 30s
@@ -22,6 +51,9 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+
+volumes:
+  postgres_data:
 
 networks:
   rabbitmq_net:

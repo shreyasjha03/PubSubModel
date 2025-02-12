@@ -1,16 +1,20 @@
 FROM python:3.9-slim
 
-# Install curl for healthcheck
-RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+# Install PostgreSQL client
+RUN apt-get update && apt-get install -y postgresql-client netcat-openbsd && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
-COPY . .
-EXPOSE 8000
 
-# Add environment variables to prevent Python from buffering logs
+# Copy the application code
+COPY . .
+
+# Make the startup script executable
+RUN chmod +x start.sh
+
+# Environment variables for logging
 ENV PYTHONUNBUFFERED=1
 
-# Change the CMD to use Python directly
-CMD ["python", "-u", "publisher.py"]
+# Run the startup script
+CMD ["./start.sh"]

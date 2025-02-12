@@ -1,0 +1,1 @@
+Welcome {{content.name}}! Your account has been successfully created. Start exploring our services now! Need help? Contact support at 1-800-HELP. 
